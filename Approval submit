@@ -55,19 +55,19 @@ function processApprovals() {
     const approvalData = approvalSheet.getRange(2, JOIN_KEY_COL, lastRowApproval - 1, 4).getValues(); // T,U,V,W
 
     // Prepare maps for validation
-    const joinKeys = approvalData.map(r => r[0]);
-    const statusValues = approvalData.map(r => r[2]);
+    const sourceKeys = approvalData.map(r => r[1]);   // U
+    const statusValues = approvalData.map(r => r[2]); // V
 
-    // Map JOIN_KEY -> indices
+    // Map SOURCE_KEY -> indices
     const keyMap = {};
-    for (let i = 0; i < joinKeys.length; i++) {
-      const key = joinKeys[i];
+    for (let i = 0; i < sourceKeys.length; i++) {
+      const key = sourceKeys[i];
       if (!key) continue;
       if (!keyMap[key]) keyMap[key] = [];
       keyMap[key].push(i);
     }
 
-    // --- Validation for duplicate JOIN_KEYs ---
+    // --- Validation for duplicate SOURCE_KEYs ---
     for (const key in keyMap) {
       const indices = keyMap[key];
       if (indices.length < 2) continue;
