@@ -39,10 +39,11 @@ function processApprovals() {
     const summarySheet = ss.getSheetByName("SUBMIT SUMMARY SHEET");
 
     // Column numbers in Approval Sheet
-    const JOIN_KEY_COL = 20;      // T
-    const SOURCE_KEY_COL = 21;    // U
-    const STATUS_COL = 22;        // V
-    const COMMENT_COL = 23;       // W
+    const JOIN_KEY_COL = 20;        // T
+    const SOURCE_KEY_COL = 21;      // U
+    const STATUS_COL = 22;          // V
+    const COMMENT_COL = 23;         // W
+    const ERROR_MESSAGE_COL = 24;   // X
 
     const lastRowApproval = approvalSheet.getLastRow();
 
@@ -52,7 +53,7 @@ function processApprovals() {
     }
 
     // --- Read Approval Sheet data ---
-    const approvalData = approvalSheet.getRange(2, JOIN_KEY_COL, lastRowApproval - 1, 4).getValues(); // T,U,V,W
+    const approvalData = approvalSheet.getRange(2, JOIN_KEY_COL, lastRowApproval - 1, 5).getValues(); // T,U,V,W,X
 
     // Prepare maps for validation
     const sourceKeys = approvalData.map(r => r[1]);   // U
@@ -78,6 +79,21 @@ function processApprovals() {
 
       if (!allBlank && !allFilled) {
         ui.alert("Fill the APPROVAL COMMENTS for all the quotation values");
+        return;
+      }
+    }
+
+    // --- Validation for CAUTION: ERROR MESSAGE ---
+    for (let i = 0; i < approvalData.length; i++) {
+      const joinKey = approvalData[i][0];
+      const status = approvalData[i][2];
+      const errorMessage = approvalData[i][4];
+
+      if (!joinKey) continue;
+      if (!status) continue;
+
+      if (errorMessage) {
+        ui.alert("Clear the ERROR MESSAGE");
         return;
       }
     }
