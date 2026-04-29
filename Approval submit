@@ -1,0 +1,95 @@
+
+function processApprovals() {
+
+  // 🔒 RUN ONLY FROM APPROVAL SHEET
+  if (SpreadsheetApp.getActiveSheet().getName() !== "APPROVAL SHEET") {
+    SpreadsheetApp.getUi().alert(
+      "Please run this from the APPROVAL SHEET only."
+    );
+    return;
+  }
+
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const approvalSheet = ss.getSheetByName("APPROVAL SHEET");
+  const summarySheet = ss.getSheetByName("SUBMIT SUMMARY SHEET");
+
+  // Column numbers in Approval Sheet
+  const JOIN_KEY_COL = 20;      // T
+  const SOURCE_KEY_COL = 21;    // U
+  const STATUS_COL = 22;        // V
+  const COMMENT_COL = 23;       // W
+
+  const lastRowApproval = approvalSheet.getLastRow();
+
+  // --- Read Approval Sheet data ---
+  const approvalData = approvalSheet.getRange(2, JOIN_KEY_COL, lastRowApproval - 1, 4).getValues(); // T,U,V,W
+
+  // Prepare maps for validation
+  const joinKeys = approvalData.map(r => r[0]);   // T
+  const statusValues = approvalData.map(r => r[2]); // V
+
+  // Map JOIN_KEY -> indices
+  const keyMap = {};
+  for (let i = 0; i < joinKeys.length; i++) {
+    const key = joinKeys[i];
+    if (!key) continue;
+    if (!keyMap[key]) keyMap[key] = [];
+    keyMap[key].push(i);
+  }
+
+  // --- Validation for duplicate JOIN_KEYs ---
+  for (const key in keyMap) {
+    const indices = keyMap[key];
+    if (indices.length < 2) continue; // only duplicates
+    const values = indices.map(i => statusValues[i]);
+    const allBlank = values.every(v => !v);
+    const allFilled = values.every(v => v);
+    if (!allBlank && !allFilled) {
+      SpreadsheetApp.getUi().alert("Fill the APPROVAL COMMENTS for all the quotation values");
+      return; // stop script immediately
+    }
+  }
+
+  const approverEmail = Session.getActiveUser().getEmail();
+  const approvalTimestamp = new Date();
+
+  // --- Prepare rows to append ---
+  const rowsToAppend = [];
+  const rowsToClear = []; // Keep track of which rows to clear V&W
+
+  for (let i = 0; i < approvalData.length; i++) {
+    const joinKey = approvalData[i][0];
+    const sourceKey = approvalData[i][1];
+    const status = approvalData[i][2];
+    const comment = approvalData[i][3];
+
+    if (!joinKey) continue;          // skip blank JOIN_KEYs
+    if (!status) continue;           // skip rows with empty V (Approval Status)
+
+    // Append only valid rows
+    rowsToAppend.push([
+      joinKey,          // A
+      sourceKey,        // B
+      status,           // C
+      comment,          // D
+      approverEmail,    // E
+      approvalTimestamp // F
+    ]);
+
+    // Keep track for clearing V & W
+    rowsToClear.push(i + 2); // actual row numbers in Approval Sheet
+  }
+
+  // --- Append to SUBMIT SUMMARY SHEET ---
+  if (rowsToAppend.length > 0) {
+    let firstEmptyRow = summarySheet.getRange("A:A").getValues().filter(String).length + 1;
+    summarySheet.getRange(firstEmptyRow, 1, rowsToAppend.length, 6).setValues(rowsToAppend);
+  }
+
+  // --- Clear V & W in Approval Sheet for appended rows ---
+  for (const row of rowsToClear) {
+    approvalSheet.getRange(row, STATUS_COL).clearContent();
+    approvalSheet.getRange(row, COMMENT_COL).clearContent();
+  }
+}
