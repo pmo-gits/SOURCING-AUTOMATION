@@ -34,6 +34,12 @@ function onFormSubmit(e) {
   const emailColForm = formHeaders.indexOf(EMAIL_HEADER) + 1;
   const categoryColForm = formHeaders.indexOf(CATEGORY_HEADER) + 1;
 
+  const submitterNameColForm =
+    formHeaders.indexOf("SUBMITTER NAME") + 1 ||
+    formHeaders.indexOf("SUBMITTED BY") + 1 ||
+    formHeaders.indexOf("RAISED BY") + 1 ||
+    formHeaders.indexOf("NAME") + 1;
+
   if (sourcingColForm === 0) {
     throw new Error("SOURCING REQUEST NO header not found in Form Responses 1.");
   }
@@ -53,6 +59,10 @@ function onFormSubmit(e) {
   const submitterEmail = String(
     formSheet.getRange(submittedRow, emailColForm).getDisplayValue()
   ).trim().toLowerCase();
+
+  const submitterName = submitterNameColForm
+    ? String(formSheet.getRange(submittedRow, submitterNameColForm).getDisplayValue()).trim()
+    : submitterEmail;
 
   const category = String(
     formSheet.getRange(submittedRow, categoryColForm).getDisplayValue()
@@ -173,7 +183,7 @@ function onFormSubmit(e) {
 
     const htmlBody =
       '<p>Dear Mr. Rizwan,</p>' +
-      '<p>This is to inform you that a sourcing request has been raised.</p>' +
+      '<p>This is to inform you that a sourcing request has been raised by <b>' + submitterName + '</b>.</p>' +
       '<br>' +
       '<p><b>SOURCING REQUEST DETAILS:</b></p>' +
       '<p>' +
@@ -187,11 +197,11 @@ function onFormSubmit(e) {
       '<br>' +
       '<p><b>REFERENCE IMAGES:</b></p>' +
       '<p>' +
-      '<b>REFERENCE IMAGE 1</b><br>' + ref1 + '<br><br>' +
-      '<b>REFERENCE IMAGE 2</b><br>' + ref2 + '<br><br>' +
-      '<b>REFERENCE IMAGE 3</b><br>' + ref3 + '<br><br>' +
-      '<b>REFERENCE IMAGE 4</b><br>' + ref4 + '<br><br>' +
-      '<b>REFERENCE IMAGE 5</b><br>' + ref5 +
+      ref1 + '<br>' +
+      ref2 + '<br>' +
+      ref3 + '<br>' +
+      ref4 + '<br>' +
+      ref5 +
       '</p>' +
       '<br><br>' +
       '<p>For further details and necessary action, kindly review the sourcing sheet</p>';
