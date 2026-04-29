@@ -1,0 +1,109 @@
+function onFormSubmit(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  const FORM_SHEET_NAME = "Form Responses 1";
+  const REQUEST_SHEET_NAME = "REQUEST LIST";
+
+  const SOURCING_HEADER = "SOURCING REQUEST NO";
+  const EMAIL_HEADER = "Email Address";
+  const COMMENT_HEADER = "ON HOLD / CANCELLED COMMENT - UPDATION";
+
+  const formSheet = ss.getSheetByName(FORM_SHEET_NAME);
+  const requestSheet = ss.getSheetByName(REQUEST_SHEET_NAME);
+
+  if (!formSheet || !requestSheet) {
+    throw new Error("Required sheet not found.");
+  }
+
+  const submittedRow = e.range.getRow();
+  const formHeaders = formSheet
+    .getRange(1, 1, 1, formSheet.getLastColumn())
+    .getDisplayValues()[0]
+    .map(h => String(h).trim());
+
+  const sourcingColForm = formHeaders.indexOf(SOURCING_HEADER) + 1;
+  const emailColForm = formHeaders.indexOf(EMAIL_HEADER) + 1;
+
+  if (sourcingColForm === 0) {
+    throw new Error("SOURCING REQUEST NO header not found in Form Responses 1.");
+  }
+
+  if (emailColForm === 0) {
+    throw new Error("Email Address header not found in Form Responses 1.");
+  }
+
+  const sourcingId = String(
+    formSheet.getRange(submittedRow, sourcingColForm).getDisplayValue()
+  ).trim();
+
+  const submitterEmail = String(
+    formSheet.getRange(submittedRow, emailColForm).getDisplayValue()
+  ).trim().toLowerCase();
+
+  if (!sourcingId || !submitterEmail) {
+    return;
+  }
+
+  const requestHeaders = requestSheet
+    .getRange(1, 1, 1, requestSheet.getLastColumn())
+    .getDisplayValues()[0]
+    .map(h => String(h).trim());
+
+  const sourcingColRequest = requestHeaders.indexOf(SOURCING_HEADER) + 1;
+  const commentColRequest = requestHeaders.indexOf(COMMENT_HEADER) + 1;
+
+  if (sourcingColRequest === 0) {
+    throw new Error("SOURCING REQUEST NO header not found in REQUEST LIST.");
+  }
+
+  if (commentColRequest === 0) {
+    throw new Error("ON HOLD / CANCELLED COMMENT - UPDATION header not found in REQUEST LIST.");
+  }
+
+  const lastRow = requestSheet.getLastRow();
+  if (lastRow < 2) return;
+
+  const sourcingValues = requestSheet
+    .getRange(2, sourcingColRequest, lastRow - 1, 1)
+    .getDisplayValues();
+
+  let matchedRow = null;
+
+  for (let i = 0; i < sourcingValues.length; i++) {
+    const requestSourcingId = String(sourcingValues[i][0]).trim();
+
+    if (requestSourcingId === sourcingId) {
+      matchedRow = i + 2;
+      break;
+    }
+  }
+
+  if (!matchedRow) return;
+
+  const targetCell = requestSheet.getRange(matchedRow, commentColRequest);
+
+  const protections = requestSheet.getProtections(SpreadsheetApp.ProtectionType.RANGE);
+
+  protections.forEach(protection => {
+    const protectedRange = protection.getRange();
+
+    if (
+      protectedRange.getRow() === targetCell.getRow() &&
+      protectedRange.getColumn() === targetCell.getColumn() &&
+      protectedRange.getNumRows() === 1 &&
+      protectedRange.getNumColumns() === 1
+    ) {
+      protection.remove();
+    }
+  });
+
+  const protection = targetCell.protect();
+  protection.setDescription("Protected comment updation cell for " + sourcingId);
+
+  protection.removeEditors(protection.getEditors());
+  protection.addEditor(submitterEmail);
+
+  if (protection.canDomainEdit()) {
+    protection.setDomainEdit(false);
+  }
+}
