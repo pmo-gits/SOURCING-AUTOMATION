@@ -1,0 +1,87 @@
+function sendDailyApprovalPendingMail() {
+
+  // ❌ Skip Sunday (0 = Sunday)
+  const today = new Date();
+  if (today.getDay() === 0) return;
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName("Approval Sheet"); // change if needed
+  if (!sheet) return;
+
+  const data = sheet.getDataRange().getValues();
+  if (data.length < 2) return;
+
+  const headers = data[0];
+
+  // Required columns in exact order
+  const requiredCols = [
+    "JOIN KEY",
+    "MATERIAL DESCRIPTION",
+    "COLOR FINISH",
+    "MATERIAL CONTENT/\nFABRIC TYPE",
+    "QTY REQUIRED",
+    "SUPPLIER NAME",
+    "CONVERTED PRICE [INR]",
+    "SOURCING REMARKS",
+    "QUOTATION DETAILS"
+  ];
+
+  // Get column indexes
+  const colIndexes = requiredCols.map(col => headers.indexOf(col));
+  if (colIndexes.includes(-1)) {
+    throw new Error("One or more required columns not found in Approval Sheet");
+  }
+
+  // Filter rows where JOIN KEY is not empty
+  const rows = data.slice(1).filter(r => r[colIndexes[0]] !== "");
+  if (rows.length === 0) return;
+
+  // Build HTML table
+  let html = `
+    <p>Dear Sir,</p>
+    <p>
+      Please find below the <b>approval pending quotation list</b>.
+      Kindly review the quotations and provide your approval comments.
+    </p>
+
+    <table border="1" cellpadding="6" cellspacing="0"
+           style="border-collapse:collapse;font-size:12px;">
+      <tr style="background-color:#e6e6e6;font-weight:bold;">
+        ${requiredCols.map(h => `<th>${h}</th>`).join("")}
+      </tr>
+  `;
+
+  rows.forEach(row => {
+    html += `<tr>`;
+
+    colIndexes.forEach((i, idx) => {
+      let value = row[i];
+
+      // ✅ Format Converted Price [INR] to 2 decimals
+      if (requiredCols[idx] === "CONVERTED PRICE [INR]" && value !== "") {
+        value = Number(value).toFixed(2);
+      }
+
+      html += `<td>${value || ""}</td>`;
+    });
+
+    html += `</tr>`;
+  });
+
+  html += `
+    </table>
+
+    <br>
+    <p>Regards,<br>
+    Sourcing Team</p>
+  `;
+
+  // Send email with reply-to
+  MailApp.sendEmail({
+    to: "ajmal@butlerleather.com, zafar@butlerleather.com",
+    cc: "sourcing@butlerleather.com",
+    replyTo: "sourcing@butlerleather.com",
+    subject: "Approval pending list - reg.",
+    htmlBody: html
+  });
+}
