@@ -5,13 +5,12 @@ function sendDailyApprovalPendingMail() {
   if (today.getDay() === 0) return;
 
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName("Approval Sheet"); // change if needed
-  if (!sheet) return;
 
-  const data = sheet.getDataRange().getValues();
-  if (data.length < 2) return;
-
-  const headers = data[0];
+  const approvalSheets = [
+    "Kamalesh-APPROVAL SHEET",
+    "Rajeshwari-APPROVAL SHEET",
+    "Subetha-APPROVAL SHEET"
+  ];
 
   // Required columns in exact order
   const requiredCols = [
@@ -26,51 +25,74 @@ function sendDailyApprovalPendingMail() {
     "QUOTATION DETAILS"
   ];
 
-  // Get column indexes
-  const colIndexes = requiredCols.map(col => headers.indexOf(col));
-  if (colIndexes.includes(-1)) {
-    throw new Error("One or more required columns not found in Approval Sheet");
-  }
-
-  // Filter rows where JOIN KEY is not empty
-  const rows = data.slice(1).filter(r => r[colIndexes[0]] !== "");
-  if (rows.length === 0) return;
-
-  // Build HTML table
   let html = `
     <p>Dear Sir,</p>
     <p>
       Please find below the <b>approval pending quotation list</b>.
       Kindly review the quotations and provide your approval comments.
     </p>
-
-    <table border="1" cellpadding="6" cellspacing="0"
-           style="border-collapse:collapse;font-size:12px;">
-      <tr style="background-color:#e6e6e6;font-weight:bold;">
-        ${requiredCols.map(h => `<th>${h}</th>`).join("")}
-      </tr>
   `;
 
-  rows.forEach(row => {
-    html += `<tr>`;
+  let hasPendingRows = false;
 
-    colIndexes.forEach((i, idx) => {
-      let value = row[i];
+  approvalSheets.forEach(sheetName => {
 
-      // ✅ Format Converted Price [INR] to 2 decimals
-      if (requiredCols[idx] === "CONVERTED PRICE [INR]" && value !== "") {
-        value = Number(value).toFixed(2);
-      }
+    const sheet = ss.getSheetByName(sheetName);
+    if (!sheet) return;
 
-      html += `<td>${value || ""}</td>`;
+    const data = sheet.getDataRange().getValues();
+    if (data.length < 2) return;
+
+    const headers = data[0];
+
+    // Get column indexes
+    const colIndexes = requiredCols.map(col => headers.indexOf(col));
+    if (colIndexes.includes(-1)) {
+      throw new Error("One or more required columns not found in " + sheetName);
+    }
+
+    // Filter rows where JOIN KEY is not empty
+    const rows = data.slice(1).filter(r => r[colIndexes[0]] !== "");
+    if (rows.length === 0) return;
+
+    hasPendingRows = true;
+
+    html += `
+      <br>
+      <h3>${sheetName}</h3>
+
+      <table border="1" cellpadding="6" cellspacing="0"
+             style="border-collapse:collapse;font-size:12px;">
+        <tr style="background-color:#e6e6e6;font-weight:bold;">
+          ${requiredCols.map(h => `<th>${h}</th>`).join("")}
+        </tr>
+    `;
+
+    rows.forEach(row => {
+      html += `<tr>`;
+
+      colIndexes.forEach((i, idx) => {
+        let value = row[i];
+
+        // ✅ Format Converted Price [INR] to 2 decimals
+        if (requiredCols[idx] === "CONVERTED PRICE [INR]" && value !== "") {
+          value = Number(value).toFixed(2);
+        }
+
+        html += `<td>${value || ""}</td>`;
+      });
+
+      html += `</tr>`;
     });
 
-    html += `</tr>`;
+    html += `
+      </table>
+    `;
   });
 
-  html += `
-    </table>
+  if (!hasPendingRows) return;
 
+  html += `
     <br>
     <p>Regards,<br>
     Sourcing Team</p>
@@ -78,8 +100,8 @@ function sendDailyApprovalPendingMail() {
 
   // Send email with reply-to
   MailApp.sendEmail({
-    to: "ajmal@butlerleather.com, zafar@butlerleather.com",
-    cc: "sourcing@butlerleather.com",
+    to: "ppc@butlerleather.com, developement@butlerleather.com, design@butlerleather.com",
+    cc: "sourcing@butlerleather.com, ajmal@butlerleather.com",
     replyTo: "sourcing@butlerleather.com",
     subject: "Approval pending list - reg.",
     htmlBody: html
