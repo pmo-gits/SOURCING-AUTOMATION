@@ -14,6 +14,7 @@ function onFormSubmit(e) {
   const COLOR_HEADER = "COLOR FINISH";
   const MATERIAL_CONTENT_HEADER = "MATERIAL CONTENT/FABRIC TYPE";
   const QTY_HEADER = "QTY REQUIRED";
+  const SOURCING_RELATED_HEADER = "SOURCING RELATED";
 
   const RIZWAN_EMAIL = "pmo@butlerleather.com";
 
@@ -34,12 +35,6 @@ function onFormSubmit(e) {
   const emailColForm = formHeaders.indexOf(EMAIL_HEADER) + 1;
   const categoryColForm = formHeaders.indexOf(CATEGORY_HEADER) + 1;
 
-  const submitterNameColForm =
-    formHeaders.indexOf("SUBMITTER NAME") + 1 ||
-    formHeaders.indexOf("SUBMITTED BY") + 1 ||
-    formHeaders.indexOf("RAISED BY") + 1 ||
-    formHeaders.indexOf("NAME") + 1;
-
   if (sourcingColForm === 0) {
     throw new Error("SOURCING REQUEST NO header not found in Form Responses 1.");
   }
@@ -59,10 +54,6 @@ function onFormSubmit(e) {
   const submitterEmail = String(
     formSheet.getRange(submittedRow, emailColForm).getDisplayValue()
   ).trim().toLowerCase();
-
-  const submitterName = submitterNameColForm
-    ? String(formSheet.getRange(submittedRow, submitterNameColForm).getDisplayValue()).trim()
-    : submitterEmail;
 
   const category = String(
     formSheet.getRange(submittedRow, categoryColForm).getDisplayValue()
@@ -85,6 +76,7 @@ function onFormSubmit(e) {
   const colorColRequest = requestHeaders.indexOf(COLOR_HEADER) + 1;
   const materialContentColRequest = requestHeaders.indexOf(MATERIAL_CONTENT_HEADER) + 1;
   const qtyColRequest = requestHeaders.indexOf(QTY_HEADER) + 1;
+  const sourcingRelatedColRequest = requestHeaders.indexOf(SOURCING_RELATED_HEADER) + 1;
 
   const ref1ColRequest = requestHeaders.indexOf("REFERENCE IMAGE 1") + 1;
   const ref2ColRequest = requestHeaders.indexOf("REFERENCE IMAGE 2") + 1;
@@ -108,6 +100,7 @@ function onFormSubmit(e) {
     if (colorColRequest === 0) missingHeaders.push(COLOR_HEADER);
     if (materialContentColRequest === 0) missingHeaders.push(MATERIAL_CONTENT_HEADER);
     if (qtyColRequest === 0) missingHeaders.push(QTY_HEADER);
+    if (sourcingRelatedColRequest === 0) missingHeaders.push(SOURCING_RELATED_HEADER);
     if (ref1ColRequest === 0) missingHeaders.push("REFERENCE IMAGE 1");
     if (ref2ColRequest === 0) missingHeaders.push("REFERENCE IMAGE 2");
     if (ref3ColRequest === 0) missingHeaders.push("REFERENCE IMAGE 3");
@@ -172,6 +165,7 @@ function onFormSubmit(e) {
     const colorFinish = String(requestSheet.getRange(matchedRow, colorColRequest).getDisplayValue()).trim();
     const materialContent = String(requestSheet.getRange(matchedRow, materialContentColRequest).getDisplayValue()).trim();
     const qtyRequired = String(requestSheet.getRange(matchedRow, qtyColRequest).getDisplayValue()).trim();
+    const sourcingRelated = String(requestSheet.getRange(matchedRow, sourcingRelatedColRequest).getDisplayValue()).trim();
 
     const ref1 = String(requestSheet.getRange(matchedRow, ref1ColRequest).getDisplayValue()).trim();
     const ref2 = String(requestSheet.getRange(matchedRow, ref2ColRequest).getDisplayValue()).trim();
@@ -183,7 +177,7 @@ function onFormSubmit(e) {
 
     const htmlBody =
       '<p>Dear Mr. Rizwan,</p>' +
-      '<p>This is to inform you that a sourcing request has been raised by <b>' + submitterName + '</b>.</p>' +
+      '<p>This is to inform you that a sourcing request has been raised by <b>' + sourcingRelated + '</b>.</p>' +
       '<br>' +
       '<p><b>SOURCING REQUEST DETAILS:</b></p>' +
       '<p>' +
