@@ -6,7 +6,16 @@ function onFormSubmit(e) {
 
   const SOURCING_HEADER = "SOURCING REQUEST NO";
   const EMAIL_HEADER = "Email Address";
+  const CATEGORY_HEADER = "CATEGORY";
   const COMMENT_HEADER = "ON HOLD / CANCELLED COMMENT - UPDATION";
+
+  const CUSTOMER_HEADER = "CUSTOMER NAME";
+  const MATERIAL_DESC_HEADER = "MATERIAL DESCRIPTION";
+  const COLOR_HEADER = "COLOR/FINISH";
+  const MATERIAL_CONTENT_HEADER = "MATERIAL CONTENT/FABRIC TYPE";
+  const QTY_HEADER = "QTY REQUIRED";
+
+  const RIZWAN_EMAIL = "leather@butlerleather.com";
 
   const formSheet = ss.getSheetByName(FORM_SHEET_NAME);
   const requestSheet = ss.getSheetByName(REQUEST_SHEET_NAME);
@@ -23,6 +32,7 @@ function onFormSubmit(e) {
 
   const sourcingColForm = formHeaders.indexOf(SOURCING_HEADER) + 1;
   const emailColForm = formHeaders.indexOf(EMAIL_HEADER) + 1;
+  const categoryColForm = formHeaders.indexOf(CATEGORY_HEADER) + 1;
 
   if (sourcingColForm === 0) {
     throw new Error("SOURCING REQUEST NO header not found in Form Responses 1.");
@@ -32,6 +42,10 @@ function onFormSubmit(e) {
     throw new Error("Email Address header not found in Form Responses 1.");
   }
 
+  if (categoryColForm === 0) {
+    throw new Error("CATEGORY header not found in Form Responses 1.");
+  }
+
   const sourcingId = String(
     formSheet.getRange(submittedRow, sourcingColForm).getDisplayValue()
   ).trim();
@@ -39,6 +53,10 @@ function onFormSubmit(e) {
   const submitterEmail = String(
     formSheet.getRange(submittedRow, emailColForm).getDisplayValue()
   ).trim().toLowerCase();
+
+  const category = String(
+    formSheet.getRange(submittedRow, categoryColForm).getDisplayValue()
+  ).trim().toUpperCase();
 
   if (!sourcingId || !submitterEmail) {
     return;
@@ -52,12 +70,32 @@ function onFormSubmit(e) {
   const sourcingColRequest = requestHeaders.indexOf(SOURCING_HEADER) + 1;
   const commentColRequest = requestHeaders.indexOf(COMMENT_HEADER) + 1;
 
+  const customerColRequest = requestHeaders.indexOf(CUSTOMER_HEADER) + 1;
+  const materialDescColRequest = requestHeaders.indexOf(MATERIAL_DESC_HEADER) + 1;
+  const colorColRequest = requestHeaders.indexOf(COLOR_HEADER) + 1;
+  const materialContentColRequest = requestHeaders.indexOf(MATERIAL_CONTENT_HEADER) + 1;
+  const qtyColRequest = requestHeaders.indexOf(QTY_HEADER) + 1;
+
   if (sourcingColRequest === 0) {
     throw new Error("SOURCING REQUEST NO header not found in REQUEST LIST.");
   }
 
   if (commentColRequest === 0) {
     throw new Error("ON HOLD / CANCELLED COMMENT - UPDATION header not found in REQUEST LIST.");
+  }
+
+  if (category === "LEATHER") {
+    const missingHeaders = [];
+
+    if (customerColRequest === 0) missingHeaders.push(CUSTOMER_HEADER);
+    if (materialDescColRequest === 0) missingHeaders.push(MATERIAL_DESC_HEADER);
+    if (colorColRequest === 0) missingHeaders.push(COLOR_HEADER);
+    if (materialContentColRequest === 0) missingHeaders.push(MATERIAL_CONTENT_HEADER);
+    if (qtyColRequest === 0) missingHeaders.push(QTY_HEADER);
+
+    if (missingHeaders.length > 0) {
+      throw new Error("Missing REQUEST LIST header(s): " + missingHeaders.join(", "));
+    }
   }
 
   const lastRow = requestSheet.getLastRow();
@@ -105,5 +143,39 @@ function onFormSubmit(e) {
 
   if (protection.canDomainEdit()) {
     protection.setDomainEdit(false);
+  }
+
+  if (category === "LEATHER") {
+    const customerName = String(requestSheet.getRange(matchedRow, customerColRequest).getDisplayValue()).trim();
+    const materialDescription = String(requestSheet.getRange(matchedRow, materialDescColRequest).getDisplayValue()).trim();
+    const colorFinish = String(requestSheet.getRange(matchedRow, colorColRequest).getDisplayValue()).trim();
+    const materialContent = String(requestSheet.getRange(matchedRow, materialContentColRequest).getDisplayValue()).trim();
+    const qtyRequired = String(requestSheet.getRange(matchedRow, qtyColRequest).getDisplayValue()).trim();
+
+    const subject = sourcingId + "- New sourcing request - " + customerName;
+
+    const htmlBody =
+      '<p>Dear Mr. Rizwan,</p>' +
+      '<p>This is to inform you that a sourcing request has been raised.</p>' +
+      '<br>' +
+      '<p><b>SOURCING REQUEST DETAILS:</b></p>' +
+      '<p>' +
+      '<b>SRC NO :</b>' + sourcingId + '<br>' +
+      '<b>CUSTOMER NAME :</b>' + customerName + '<br>' +
+      '<b>MATERIAL DESCRIPTION :</b>' + materialDescription + '<br>' +
+      '<b>COLOR/FINISH :</b>' + colorFinish + '<br>' +
+      '<b>MATERIAL CONTENT/FABRIC TYPE :</b>' + materialContent + '<br>' +
+      '<b>QTY REQUIRED :</b>' + qtyRequired +
+      '</p>' +
+      '<br><br>' +
+      '<p>For further details and necessary action, kindly review the sourcing sheet</p>';
+
+    MailApp.sendEmail({
+      to: RIZWAN_EMAIL,
+      cc: submitterEmail,
+      replyTo: submitterEmail,
+      subject: subject,
+      htmlBody: htmlBody
+    });
   }
 }
